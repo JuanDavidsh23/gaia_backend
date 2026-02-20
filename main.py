@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from database import Base, engine
+from core.database import Base, engine
 from models.user import User
 from models.role import Role
 from routes.auth import router as auth_router

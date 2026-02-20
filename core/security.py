@@ -1,7 +1,7 @@
 import bcrypt
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
+from core.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
 
 def hash_password(password: str) -> str:
     salt = bcrypt.gensalt()
