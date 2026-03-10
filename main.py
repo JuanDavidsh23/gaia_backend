@@ -4,12 +4,25 @@ from models.user import User
 from models.role import Role
 from routes.auth import router as auth_router
 from middlewares.cors import add_cors_middleware
+from routes.ai import router as ai_router
+
+
+# importar websocket
+from websocket.chat_ws import router as chat_ws_router
 
 app = FastAPI()
 
-# Configurar CORS desde la carpeta middlewares
+# CORS
 add_cors_middleware(app)
 
+# crear tablas
 Base.metadata.create_all(bind=engine)
 
+# rutas normales
 app.include_router(auth_router)
+
+# websocket
+app.include_router(chat_ws_router)
+
+
+app.include_router(ai_router)
