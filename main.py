@@ -9,6 +9,7 @@ from models.match import Match
 from models.chat_room import ChatRoom
 from models.message import Message
 from routes.auth import router as auth_router
+from routes.users import router as users_router
 from middlewares.cors import add_cors_middleware
 from routes.ai import router as ai_router
 from routes.skill import router as skill_router
@@ -27,6 +28,7 @@ Base.metadata.create_all(bind=engine)
 
 # rutas normales
 app.include_router(auth_router)
+app.include_router(users_router)
 
 # websocket
 app.include_router(chat_ws_router)

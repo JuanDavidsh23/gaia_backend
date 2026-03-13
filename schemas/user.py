@@ -28,4 +28,12 @@ class LoginResponse(BaseModel):
     role: UserRole
     
     class Config:
-        from_attributes = True 
+        from_attributes = True
+
+class UserUpdate(BaseModel):
+    bio: str = None
+    avatar_url: str = None 
+
+class UserUpdate(BaseModel):
+    bio: str = None
+    avatar_url: str = None
