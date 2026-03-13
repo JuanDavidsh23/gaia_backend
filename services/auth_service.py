@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from models.user import User
 from core.security import verify_password, hash_password, create_access_token
 from fastapi import HTTPException
+from schemas.user import LoginResponse
 
 
 # ---------- REGISTER ----------
@@ -37,11 +38,18 @@ def login_user(db: Session, user_data):
     if not verify_password(user_data.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Credenciales inválidas")
 
+    # Crear token incluyendo user_id y role
     access_token = create_access_token(
-        data={"user_id": user.id}
+        data={"user_id": user.user_id, "role": user.role}
     )
 
-    return {
-        "access_token": access_token,
-        "token_type": "bearer"
-    }
+    # Devolver respuesta con todos los datos del usuario
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user_id=user.user_id,
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        role=user.role
+    )
