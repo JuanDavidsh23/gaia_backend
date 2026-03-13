@@ -13,6 +13,8 @@ class UserLogin(BaseModel):
     password: str 
 
 # Para enviar el Perfil al Frontend (Lectura)
+from typing import Optional, List
+
 class UserProfileResponse(BaseModel):
     user_id: int
     first_name: str
@@ -21,6 +23,8 @@ class UserProfileResponse(BaseModel):
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
     phone: Optional[str] = None
+    skills_to_learn: List[str] = []
+    skills_to_teach: List[str] = []
 
 # Para recibir la actualización del Frontend (Escritura)
 class UserUpdateRequest(BaseModel):
