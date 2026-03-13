@@ -24,7 +24,10 @@ def register_user(db: Session, user_data):
     db.commit()
     db.refresh(new_user)
 
-    return {"message": "Usuario creado correctamente"}
+    return {
+        "message": "Usuario creado correctamente",
+        "user_id": new_user.user_id
+    }
 
 
 # ---------- LOGIN ----------
