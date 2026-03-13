@@ -38,10 +38,41 @@ def get_user_profile(db: Session, user_id: int):
     
     return profile_data
 
-def update_user_profile(db: Session, user_id: int, data: UserUpdateRequest):
+from fastapi import HTTPException, UploadFile
+import uuid
+from core.database import supabase
+
+def update_user_profile(db: Session, user_id: int, data: UserUpdateRequest, foto: UploadFile = None):
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    # --- LÓGICA DE SUBIDA DE IMAGEN A SUPABASE ---
+    if foto and supabase:
+        try:
+            # Generamos un nombre único para evitar sobreescribir fotos de otros
+            file_extension = foto.filename.split(".")[-1]
+            unique_filename = f"{user_id}_{uuid.uuid4().hex}.{file_extension}"
+            
+            # Subimos el archivo al bucket llamado 'avatars' (Debes crear este bucket en Supabase)
+            # foto.file.read() lee los bytes de la imagen
+            res = supabase.storage.from_("avatars").upload(
+                file=foto.file.read(),
+                path=unique_filename,
+                file_options={"content-type": foto.content_type}
+            )
+            
+            # Obtenemos la URL pública para guardarla en la Base de Datos
+            public_url = supabase.storage.from_("avatars").get_public_url(unique_filename)
+            
+            # Asignamos esa URL a nuestro objeto 'data' para que se guarde abajo
+            data.avatar_url = public_url
+
+        except Exception as e:
+            # Si algo falla con la subida, se lo decimos al Front
+            raise HTTPException(status_code=500, detail=f"Error subiendo imagen: {str(e)}")
+            
+    # --- FIN LÓGICA DE IMAGEN ---
     
     # Solo actualizamos los campos que el Frontend envió (que no son None)
     update_data = data.model_dump(exclude_unset=True)
