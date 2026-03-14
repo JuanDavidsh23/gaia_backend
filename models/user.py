@@ -26,6 +26,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     bio = Column(Text)
     avatar_url = Column(String(255))
+    points = Column(Integer, default=0)
     datetime_created_at = Column(DateTime, default=datetime.utcnow)
 
     plan = relationship("Plan")
