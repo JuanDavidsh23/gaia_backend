@@ -7,6 +7,7 @@ from models.chat_room import ChatRoom
 from schemas.match import InteractionRequest
 
 def create_interaction(db: Session, data: InteractionRequest):
+    # Registra un Like o Pass. Si es un Like mutuo, crea un Match y su sala de chat
     # 1. Validar que los usuarios existen
     user_from = db.query(User).filter(User.user_id == data.user_from_id).first()
     user_to = db.query(User).filter(User.user_id == data.user_to_id).first()
@@ -71,6 +72,7 @@ def create_interaction(db: Session, data: InteractionRequest):
     return {"msg": "Interacción guardada", "match_created": False}
 
 def get_user_feed(db: Session, current_user_id: int):
+    # Obtiene una lista de perfiles que el usuario aun no ha evaluado
     # 1. Obtener los IDs de los usuarios con los que YA interactué (para excluirlos)
     interacted_users = db.query(Interaction.user_to_id).filter(
         Interaction.user_from_id == current_user_id
@@ -119,6 +121,7 @@ def get_user_feed(db: Session, current_user_id: int):
     return {"users": result}
 
 def get_user_matches(db: Session, user_id: int):
+    # Devuelve todos los matches exitosos de un usuario y los IDs de chat correspondientes
     from sqlalchemy import or_
     
     # Buscar todos los matches donde este usuario sea user1 o user2

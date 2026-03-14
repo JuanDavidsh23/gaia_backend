@@ -15,18 +15,15 @@ def get_db():
         db.close()
 
 # ---------- OBTENER PERFIL ----------
-@router.get("/users/{user_id}", response_model=UserProfileResponse)
+@router.get("/users/{user_id}", response_model=UserProfileResponse, summary="Get User Profile")
 def read_user_profile(user_id: int, db: Session = Depends(get_db)):
-    """
-    Devuelve los datos actuales del usuario para llenar
-    el formulario de "Mi Perfil" en el Frontend.
-    """
+    # Devuelve el perfil completo del usuario con sus habilidades
     return get_user_profile(db, user_id)
 
 from fastapi import APIRouter, Depends, UploadFile, File, Form
 
 # ---------- ACTUALIZAR PERFIL ----------
-@router.put("/users/{user_id}", response_model=UserProfileResponse)
+@router.put("/users/{user_id}", response_model=UserProfileResponse, summary="Update User Profile")
 def edit_user_profile(
     user_id: int, 
     first_name: str = Form(None),
@@ -36,10 +33,7 @@ def edit_user_profile(
     foto: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
-    """
-    Recibe los datos nuevos (bio, teléfono, etc.) vía FormData
-    y opcionalmente una foto que se subirá a Supabase Storage.
-    """
+    # Actualiza los datos del usuario y permite subir una foto al storage de Supabase
     # Empacamos los datos en el esquema que ya teníamos
     data = UserUpdateRequest(
         first_name=first_name,

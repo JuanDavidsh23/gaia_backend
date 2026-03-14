@@ -1,3 +1,4 @@
+# Punto de entrada principal de la aplicacion FastAPI, inicializa rutas y dependencias.
 from fastapi import FastAPI
 from core.database import Base, engine
 from models.plan import Plan

@@ -8,6 +8,7 @@ from fastapi import HTTPException
 
 # ---------- REGISTER ----------
 def register_user(db: Session, user_data):
+    # Crea un nuevo usuario verificando que el email no exista y hasheando la contraseña
     existing_user = db.query(User).filter(User.email == user_data.email).first()
 
     if existing_user:
@@ -33,6 +34,7 @@ def register_user(db: Session, user_data):
 
 # ---------- LOGIN ----------
 def login_user(db: Session, user_data):
+    # Autentica a un usuario y devuelve un token JWT de acceso
     user = db.query(User).filter(User.email == user_data.email).first()
 
     if not user:

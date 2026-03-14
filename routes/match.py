@@ -15,29 +15,19 @@ def get_db():
         db.close()
 
 # ---------- SWIPES LIKES Y PASSES ----------
-@router.post("/swipe")
+@router.post("/swipe", summary="Record a User Swipe")
 def swipe_user(data: InteractionRequest, db: Session = Depends(get_db)):
-    """
-    Endpoint donde el Frontend enviará si dio Like o Pass a una tarjeta.
-    El backend revisará si hay Match automáticamente.
-    """
+    # Registra si el usuario dio Like o Pass. Si es like mutuo se crea un Match automaticamente.
     return create_interaction(db, data)
 
-@router.get("/feed/{user_id}", response_model=dict)
+@router.get("/feed/{user_id}", response_model=dict, summary="Get User Feed")
 def get_feed(user_id: int, db: Session = Depends(get_db)):
-    """
-    Endpoint para que el Frontend obtenga las "Tarjetas" (Usuarios) 
-    a los que el usuario actual aún NO les ha dado Like o Pass. 
-    Idealmente para la pantalla principal (Home).
-    """
+    # Obtiene sugerencias de perfiles para el feed que el usuario no ha visto aun.
     from services.match_service import get_user_feed
     return get_user_feed(db, current_user_id=user_id)
 
-@router.get("/matches/{user_id}", response_model=dict)
+@router.get("/matches/{user_id}", response_model=dict, summary="Get User Matches")
 def get_matches(user_id: int, db: Session = Depends(get_db)):
-    """
-    Devuelve la lista de personas con las que el usuario
-    ya hizo Match, junto con el room_id del chat.
-    """
+    # Devuelve la lista de matches exitosos del usuario junto con las salas de chat.
     from services.match_service import get_user_matches
     return get_user_matches(db, user_id=user_id)

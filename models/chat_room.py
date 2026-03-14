@@ -3,6 +3,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from core.database import Base
 
+# Tabla que representa una sala de chat para un match exitoso entre dos usuarios.
 class ChatRoom(Base):
     __tablename__ = 'chat_rooms'
     

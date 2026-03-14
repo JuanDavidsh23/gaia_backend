@@ -15,10 +15,7 @@ def get_db():
         db.close()
 
 # ---------- ONBOARDING HABILIDADES ----------
-@router.post("/onboarding/skills")
+@router.post("/onboarding/skills", summary="Add User Skills Onboarding")
 def add_user_skills(data: UserSkillsRequest, db: Session = Depends(get_db)):
-    """
-    Endpoint para recibir las habilidades que el usuario 
-    quiere aprender y enseñar desde el frontend
-    """
+    # Asocia las habilidades que el usuario quiere aprender y enseñar.
     return save_user_skills(db, data)

@@ -4,13 +4,16 @@ import enum
 from datetime import datetime
 from core.database import Base
 
+# Enumeracion para tipos de interaccion (like o pass).
 class ActionEnum(str, enum.Enum):
     like = 'like'
     pass_ = 'pass'  # Usamos pass_ porque 'pass' es palabra reservada en Python
 
+# Tabla que representa una interacción (swipe) entre dos usuarios.
 class Interaction(Base):
     __tablename__ = 'interactions'
     
+    # Primary key de la tabla interactions 
     interaction_id = Column(Integer, primary_key=True, autoincrement=True)
     user_from_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
     user_to_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)

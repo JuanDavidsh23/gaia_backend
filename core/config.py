@@ -1,3 +1,10 @@
+"""
+Modulo de configuracion.
+
+Carga las variables de entorno desde un archivo .env y las expone
+como constantes de Python para su uso en toda la aplicacion.
+"""
+
 import os
 from dotenv import load_dotenv
 

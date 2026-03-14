@@ -17,12 +17,9 @@ def get_db():
         db.close()
 
 # ---------- HISTORIAL DE MENSAJES ----------
-@router.get("/messages/{room_id}")
+@router.get("/messages/{room_id}", summary="Get Chat Room Messages")
 def get_messages(room_id: int, db: Session = Depends(get_db)):
-    """
-    Devuelve el historial de mensajes de una sala de chat.
-    El Frontend debe llamar a esto ANTES de conectarse al WebSocket.
-    """
+    # Devuelve el historial de mensajes de la sala antes de conectar el WebSocket
     messages = db.query(Message).filter(
         Message.room_id == room_id
     ).order_by(Message.datetime_created_at.asc()).all()
@@ -42,7 +39,7 @@ def get_messages(room_id: int, db: Session = Depends(get_db)):
 # ---------- WEBSOCKET CHAT ----------
 @router.websocket("/ws/chat/{conversation_id}")
 async def chat(websocket: WebSocket, conversation_id: int):
-
+    # Endpoint de WebSocket para unirse a la sala, recibir, guardar y transmitir mensajes
     await websocket.accept()
 
     if conversation_id not in rooms:

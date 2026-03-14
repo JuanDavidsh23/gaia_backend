@@ -1,3 +1,10 @@
+"""
+Modulo de configuracion de base de datos.
+
+Configura el motor de SQLAlchemy, la sesión y la base declarativa.
+Tambien inicializa el cliente de Supabase si se proporcionan las credenciales.
+"""
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os

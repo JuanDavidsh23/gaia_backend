@@ -6,6 +6,7 @@ from schemas.skill import UserSkillsRequest
 from fastapi import HTTPException
 
 def save_user_skills(db: Session, data: UserSkillsRequest):
+    # Guarda las habilidades que un usuario quiere aprender o enseñar, creandolas si no existen
     # Verificamos si el usuario existe
     user = db.query(User).filter(User.user_id == data.user_id).first()
     if not user:

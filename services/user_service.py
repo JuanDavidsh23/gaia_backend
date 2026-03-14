@@ -4,6 +4,7 @@ from models.user import User
 from schemas.user import UserUpdateRequest
 
 def get_user_profile(db: Session, user_id: int):
+    # Recupera los datos completos del perfil de un usuario, junto con sus habilidades
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -43,6 +44,7 @@ import uuid
 from core.database import supabase
 
 def update_user_profile(db: Session, user_id: int, data: UserUpdateRequest, foto: UploadFile = None):
+    # Actualiza los datos del perfil y opcionalmente sube una nueva imagen a Supabase
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")

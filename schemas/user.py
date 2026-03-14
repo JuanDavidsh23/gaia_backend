@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, List
 
+# Esquema para registrar un nuevo usuario.
 class UserCreate(BaseModel):
     first_name: str
     last_name: str 
@@ -8,13 +9,12 @@ class UserCreate(BaseModel):
     password: str
     phone: str
 
+# Esquema para el login de usuario.
 class UserLogin(BaseModel):
     email: EmailStr 
     password: str 
 
-# Para enviar el Perfil al Frontend (Lectura)
-from typing import Optional, List
-
+# Esquema para la respuesta del perfil de usuario.
 class UserProfileResponse(BaseModel):
     user_id: int
     first_name: str
@@ -26,7 +26,7 @@ class UserProfileResponse(BaseModel):
     skills_to_learn: List[str] = []
     skills_to_teach: List[str] = []
 
-# Para recibir la actualización del Frontend (Escritura)
+# Esquema para actualizar el perfil de usuario.
 class UserUpdateRequest(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
