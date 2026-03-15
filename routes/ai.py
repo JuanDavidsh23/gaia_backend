@@ -8,10 +8,14 @@ router = APIRouter()
 class AIRequest(BaseModel):
     message: str
 
+from fastapi import HTTPException
+
 # Ruta para interactuar con el asistente de IA
 @router.post("/ai", summary="Interact with the AI Assistant")
 def ai_chat(request: AIRequest):
-    # Envia el mensaje al servicio de IA y devuelve la respuesta generada
-    answer = ask_ai(request.message)
-
-    return {"response": answer}
+    try:
+        # Envia el mensaje al servicio de IA y devuelve la respuesta generada
+        answer = ask_ai(request.message)
+        return {"response": answer}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

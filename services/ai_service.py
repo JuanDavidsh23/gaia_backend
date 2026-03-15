@@ -7,8 +7,12 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 
 # Función original para el endpoint /ai
 def ask_ai(message: str) -> str:
-    response = model.generate_content(message)
-    return response.text.strip()
+    try:
+        response = model.generate_content(message)
+        return response.text.strip()
+    except Exception as e:
+        print(f"Error en Gemini: {e}")
+        raise Exception(f"Error conectando a Gemini: {str(e)}")
 
 
 def moderate_and_comment(message: str, recent_messages: list[dict]) -> str | None:
