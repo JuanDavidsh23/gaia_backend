@@ -76,16 +76,22 @@ async def chat(
             # Guardar el mensaje en la Base de Datos
             db = SessionLocal()
             try:
+                msg_type = data.get("type", "text")
+                # Solo se aceptan tipos válidos — cualquier otro se trata como texto
+                if msg_type not in ("text", "image", "audio"):
+                    msg_type = "text"
                 new_message = Message(
                     room_id=conversation_id,
                     sender_id=user_id,
-                    message=data.get("message")
+                    message=data.get("message"),
+                    message_type=msg_type
                 )
                 db.add(new_message)
                 db.commit()
 
                 data["message_id"] = new_message.message_id
                 data["created_at"] = str(new_message.datetime_created_at)
+                data["type"] = msg_type
             finally:
                 db.close()
 
