@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint, CheckConstraint, DateTime
+from sqlalchemy import Column, Integer, ForeignKey, UniqueConstraint, CheckConstraint, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from core.database import Base
@@ -12,6 +12,7 @@ class Match(Base):
     user1_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
     user2_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
     datetime_created_at = Column(DateTime, default=datetime.utcnow)
+    is_completed = Column(Boolean, default=False)
     
     # Restricciones de la tabla matches 
     __table_args__ = (

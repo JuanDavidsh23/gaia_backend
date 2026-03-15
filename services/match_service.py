@@ -182,7 +182,45 @@ def get_user_matches(db: Session, user_id: int):
             "first_name": other_user.first_name,
             "last_name": other_user.last_name,
             "avatar_url": other_user.avatar_url,
-            "bio": other_user.bio
+            "bio": other_user.bio,
+            "is_completed": match.is_completed
         })
     
     return {"matches": result}
+
+def finish_match_session(db: Session, match_id: int):
+    """
+    Finaliza un match (sesión de aprendizaje completada).
+    Otorga puntos a ambos usuarios por haber terminado el intercambio
+    y marca el match como 'is_completed = True' para evitar repeticiones.
+    """
+    match = db.query(Match).filter(Match.match_id == match_id).first()
+    
+    if not match:
+        raise HTTPException(status_code=404, detail="Match no encontrado.")
+        
+    if match.is_completed:
+        raise HTTPException(status_code=400, detail="Este match ya fue finalizado y los puntos ya se otorgaron.")
+        
+    # Obtener usuarios correspondientes
+    user1 = db.query(User).filter(User.user_id == match.user1_id).first()
+    user2 = db.query(User).filter(User.user_id == match.user2_id).first()
+    
+    # -------------------------------------------------------------
+    # CONFIGURACIÓN DE PUNTOS: Otorgamos 50 puntos por match completado
+    # -------------------------------------------------------------
+    POINTS_REWARD = 50
+    user1.points += POINTS_REWARD
+    user2.points += POINTS_REWARD
+    
+    # Bloquear para que no se sumen puntos de nuevo
+    match.is_completed = True
+    
+    db.commit()
+    
+    return {
+        "msg": "Match finalizado con éxito.",
+        "puntos_otorgados": POINTS_REWARD,
+        "user1": {"user_id": user1.user_id, "nuevos_puntos": user1.points},
+        "user2": {"user_id": user2.user_id, "nuevos_puntos": user2.points}
+    }

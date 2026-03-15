@@ -31,3 +31,9 @@ def get_matches(user_id: int, db: Session = Depends(get_db)):
     # Devuelve la lista de matches exitosos del usuario junto con las salas de chat.
     from services.match_service import get_user_matches
     return get_user_matches(db, user_id=user_id)
+
+@router.post("/matches/{match_id}/finish", summary="Finish a match and grant points")
+def finish_match(match_id: int, db: Session = Depends(get_db)):
+    # Finaliza el match con otro usuario, sumando puntos de nivel a ambos
+    from services.match_service import finish_match_session
+    return finish_match_session(db, match_id)
