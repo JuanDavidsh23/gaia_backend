@@ -18,6 +18,7 @@ from routes.user import router as user_router
 
 # importar websocket
 from websocket.chat_ws import router as chat_ws_router
+from websocket.signaling_ws import router as signal_ws_router
 
 app = FastAPI()
 
@@ -32,6 +33,7 @@ app.include_router(auth_router)
 
 # websocket
 app.include_router(chat_ws_router)
+app.include_router(signal_ws_router)
 
 
 app.include_router(ai_router)
