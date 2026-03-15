@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, ForeignKey, Enum, UniqueConstraint, DateTime
 from sqlalchemy.orm import relationship
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 from core.database import Base
 
 # Enumeracion para tipos de interaccion (like o pass).
@@ -18,7 +18,7 @@ class Interaction(Base):
     user_from_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
     user_to_id = Column(Integer, ForeignKey('users.user_id'), nullable=False)
     actions = Column(Enum(ActionEnum), nullable=False)
-    datetime_created_at = Column(DateTime, default=datetime.utcnow)
+    datetime_created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     __table_args__ = (
         UniqueConstraint('user_from_id', 'user_to_id', name='uq_interaction_users'),

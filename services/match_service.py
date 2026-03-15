@@ -6,21 +6,21 @@ from models.match import Match
 from models.chat_room import ChatRoom
 from schemas.match import InteractionRequest
 
-def create_interaction(db: Session, data: InteractionRequest):
+def create_interaction(db: Session, data: InteractionRequest, user_from_id: int):
     # Registra un Like o Pass. Si es un Like mutuo, crea un Match y su sala de chat
     # 1. Validar que los usuarios existen
-    user_from = db.query(User).filter(User.user_id == data.user_from_id).first()
+    user_from = db.query(User).filter(User.user_id == user_from_id).first()
     user_to = db.query(User).filter(User.user_id == data.user_to_id).first()
     
     if not user_from or not user_to:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
         
-    if user_from.user_id == user_to.user_id:
+    if user_from_id == data.user_to_id:
         raise HTTPException(status_code=400, detail="No puedes darte like a ti mismo")
 
     # 2. Revisar si la interacción ya existe (evitar doble like)
     existing_interaction = db.query(Interaction).filter(
-        Interaction.user_from_id == data.user_from_id,
+        Interaction.user_from_id == user_from_id,
         Interaction.user_to_id == data.user_to_id
     ).first()
 
@@ -29,7 +29,7 @@ def create_interaction(db: Session, data: InteractionRequest):
 
     # 3. Guardar la interacción (Like o Pass)
     new_interaction = Interaction(
-        user_from_id=data.user_from_id,
+        user_from_id=user_from_id,
         user_to_id=data.user_to_id,
         actions=data.action
     )
@@ -41,7 +41,7 @@ def create_interaction(db: Session, data: InteractionRequest):
         # Preguntar a la DB: ¿Acaso el usuario_to ya le había dado like a usuario_from antes?
         mutual_like = db.query(Interaction).filter(
             Interaction.user_from_id == data.user_to_id,
-            Interaction.user_to_id == data.user_from_id,
+            Interaction.user_to_id == user_from_id,
             Interaction.actions == ActionEnum.like
         ).first()
 
@@ -49,8 +49,8 @@ def create_interaction(db: Session, data: InteractionRequest):
             is_match = True
             
             # Ordenar IDs para cumplir tu CheckConstraint('user1_id < user2_id')
-            user1_id = min(data.user_from_id, data.user_to_id)
-            user2_id = max(data.user_from_id, data.user_to_id)
+            user1_id = min(user_from_id, data.user_to_id)
+            user2_id = max(user_from_id, data.user_to_id)
             
             # Crear el Match en la tabla matches
             new_match = Match(user1_id=user1_id, user2_id=user2_id)
@@ -74,70 +74,76 @@ def create_interaction(db: Session, data: InteractionRequest):
 def get_user_feed(db: Session, current_user_id: int):
     from models.users_skills import UserSkill, IntentEnum
     from models.skill import Skill
-    
-    # 1. Obtener los IDs de usuarios ya swipeados (para excluirlos)
-    interacted_users = db.query(Interaction.user_to_id).filter(
-        Interaction.user_from_id == current_user_id
-    ).all()
-    excluded_ids = [u[0] for u in interacted_users]
-    excluded_ids.append(current_user_id)  # Excluirme a mí mismo
 
-    # 2. Obtener MIS skills (qué quiero aprender y qué enseño)
-    my_learn = [s[0] for s in db.query(UserSkill.skill_id).filter(
+    # 1. IDs de usuarios ya swipeados (para excluirlos)
+    excluded_ids = [u[0] for u in db.query(Interaction.user_to_id).filter(
+        Interaction.user_from_id == current_user_id
+    ).all()]
+    excluded_ids.append(current_user_id)
+
+    # 2. Mis skills (qué quiero aprender y qué enseño) — 2 queries
+    my_learn = set(s[0] for s in db.query(UserSkill.skill_id).filter(
         UserSkill.user_id == current_user_id,
         UserSkill.intent == IntentEnum.learn
-    ).all()]
-    
-    my_teach = [s[0] for s in db.query(UserSkill.skill_id).filter(
+    ).all())
+
+    my_teach = set(s[0] for s in db.query(UserSkill.skill_id).filter(
         UserSkill.user_id == current_user_id,
         UserSkill.intent == IntentEnum.teach
-    ).all()]
+    ).all())
 
-    # 3. Buscar TODOS los usuarios disponibles (no swipeados, no soy yo)
-    all_available = db.query(User).filter(
+    # 3. Usuarios disponibles — 1 query (limitamos a 50 candidatos antes de filtrar)
+    available_users = db.query(User).filter(
         User.user_id.notin_(excluded_ids)
-    ).order_by(User.datetime_created_at.desc()).all()
+    ).order_by(User.datetime_created_at.desc()).limit(50).all()
+
+    available_ids = [u.user_id for u in available_users]
+
+    # 4. UNA sola query para TODOS sus skills con nombres — eliminamos N+1
+    all_skills = db.query(
+        UserSkill.user_id,
+        UserSkill.skill_id,
+        UserSkill.intent,
+        Skill.name
+    ).join(Skill, UserSkill.skill_id == Skill.skill_id).filter(
+        UserSkill.user_id.in_(available_ids)
+    ).all()
+
+    # 5. Organizar en memoria (sin tocar la BD de nuevo)
+    user_teach_ids = {}    # user_id -> set de skill_ids que enseña
+    user_learn_ids = {}    # user_id -> set de skill_ids que aprende
+    user_teach_names = {}  # user_id -> lista de nombres que enseña
+    user_learn_names = {}  # user_id -> lista de nombres que aprende
+
+    for uid, sid, intent, name in all_skills:
+        if intent == IntentEnum.teach:
+            user_teach_ids.setdefault(uid, set()).add(sid)
+            user_teach_names.setdefault(uid, []).append(name)
+        else:
+            user_learn_ids.setdefault(uid, set()).add(sid)
+            user_learn_names.setdefault(uid, []).append(name)
 
     compatible_users = []
     other_users = []
 
-    for p_user in all_available:
-        # Skills de este usuario
-        their_teach = [s[0] for s in db.query(UserSkill.skill_id).filter(
-            UserSkill.user_id == p_user.user_id,
-            UserSkill.intent == IntentEnum.teach
-        ).all()]
-        
-        their_learn = [s[0] for s in db.query(UserSkill.skill_id).filter(
-            UserSkill.user_id == p_user.user_id,
-            UserSkill.intent == IntentEnum.learn
-        ).all()]
+    for p_user in available_users:
+        uid = p_user.user_id
+        their_teach = user_teach_ids.get(uid, set())
+        their_learn = user_learn_ids.get(uid, set())
 
-        # ¿Es compatible? (lo que yo quiero aprender, él enseña, o viceversa)
         is_compatible = (
-            bool(set(my_learn) & set(their_teach)) or
-            bool(set(my_teach) & set(their_learn))
+            bool(my_learn & their_teach) or
+            bool(my_teach & their_learn)
         )
 
-        # Nombres de skills para la respuesta
-        teach_names = [s[0] for s in db.query(Skill.name).join(UserSkill).filter(
-            UserSkill.user_id == p_user.user_id,
-            UserSkill.intent == IntentEnum.teach
-        ).all()]
-        
-        learn_names = [s[0] for s in db.query(Skill.name).join(UserSkill).filter(
-            UserSkill.user_id == p_user.user_id,
-            UserSkill.intent == IntentEnum.learn
-        ).all()]
-
         user_data = {
-            "user_id": p_user.user_id,
+            "user_id": uid,
             "first_name": p_user.first_name,
             "last_name": p_user.last_name,
             "bio": p_user.bio,
             "avatar_url": p_user.avatar_url,
-            "skills_to_teach": teach_names,
-            "skills_to_learn": learn_names
+            "skills_to_teach": user_teach_names.get(uid, []),
+            "skills_to_learn": user_learn_names.get(uid, []),
         }
 
         if is_compatible:
@@ -145,11 +151,8 @@ def get_user_feed(db: Session, current_user_id: int):
         else:
             other_users.append(user_data)
 
-    # 4. PRIORIZAR compatibles primero, luego los demás (fallback)
-    result = compatible_users + other_users
-
-    # Limitar a 30 tarjetas máximo
-    return {"users": result[:30]}
+    # Compatibles primero, el resto como fallback. Máximo 30 tarjetas.
+    return {"users": (compatible_users + other_users)[:30]}
 
 def get_user_matches(db: Session, user_id: int):
     # Devuelve todos los matches exitosos de un usuario y los IDs de chat correspondientes

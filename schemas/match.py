@@ -3,8 +3,8 @@ from typing import List, Optional
 from models.interaction import ActionEnum
 
 # Esquema para una solicitud de interaccion (swipe).
+# NOTA: user_from_id ya NO se envía — el backend lo extrae del JWT token
 class InteractionRequest(BaseModel):
-    user_from_id: int   # El usuario actual que está haciendo swipe
     user_to_id: int     # El usuario de la tarjeta a la que le dio swipe
     action: ActionEnum  # "like" o "pass"
 

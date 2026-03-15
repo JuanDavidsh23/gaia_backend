@@ -5,10 +5,10 @@ from models.users_skills import UserSkill, IntentEnum
 from schemas.skill import UserSkillsRequest
 from fastapi import HTTPException
 
-def save_user_skills(db: Session, data: UserSkillsRequest):
+def save_user_skills(db: Session, data: UserSkillsRequest, user_id: int):
     # Guarda las habilidades que un usuario quiere aprender o enseñar, creandolas si no existen
-    # Verificamos si el usuario existe
-    user = db.query(User).filter(User.user_id == data.user_id).first()
+    # Verificamos si el usuario existe (user_id viene del token JWT)
+    user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 

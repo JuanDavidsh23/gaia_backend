@@ -1,20 +1,15 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from sqlalchemy.orm import Session
-from core.database import SessionLocal
+from core.database import get_db, SessionLocal
+from core.security import SECRET_KEY, ALGORITHM
 from models.message import Message
+from jose import JWTError, jwt
 
 router = APIRouter()
 
-# salas de chat
-rooms = {}
+# Salas activas: { room_id: [websocket, ...] }
+rooms: dict[int, list[WebSocket]] = {}
 
-# ---------- DEPENDENCIA DB ----------
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 # ---------- HISTORIAL DE MENSAJES ----------
 @router.get("/messages/{room_id}", summary="Get Chat Room Messages")
@@ -23,7 +18,7 @@ def get_messages(room_id: int, db: Session = Depends(get_db)):
     messages = db.query(Message).filter(
         Message.room_id == room_id
     ).order_by(Message.datetime_created_at.asc()).all()
-    
+
     return {
         "messages": [
             {
@@ -36,47 +31,66 @@ def get_messages(room_id: int, db: Session = Depends(get_db)):
         ]
     }
 
+
 # ---------- WEBSOCKET CHAT ----------
 @router.websocket("/ws/chat/{conversation_id}")
-async def chat(websocket: WebSocket, conversation_id: int):
-    # Endpoint de WebSocket para unirse a la sala, recibir, guardar y transmitir mensajes
+async def chat(
+    websocket: WebSocket,
+    conversation_id: int,
+    token: str = Query(...)  # El frontend debe pasar ?token=<jwt>
+):
+    # Validar el JWT antes de aceptar la conexión
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: int = payload.get("user_id")
+        if user_id is None:
+            await websocket.close(code=4001)
+            return
+    except JWTError:
+        await websocket.close(code=4001)
+        return
+
     await websocket.accept()
 
+    # Registrar en la sala
     if conversation_id not in rooms:
         rooms[conversation_id] = []
-
     rooms[conversation_id].append(websocket)
 
-    print("Usuario conectado a conversación", conversation_id)
+    print(f"Usuario {user_id} conectado a sala {conversation_id}")
 
     try:
         while True:
-
             data = await websocket.receive_json()
 
-            # GUARDAR el mensaje en la Base de Datos
+            # Forzar que el user_id del mensaje sea el del token (seguridad)
+            data["user_id"] = user_id
+
+            # Guardar el mensaje en la Base de Datos
             db = SessionLocal()
             try:
                 new_message = Message(
                     room_id=conversation_id,
-                    sender_id=data.get("user_id"),
+                    sender_id=user_id,
                     message=data.get("message")
                 )
                 db.add(new_message)
                 db.commit()
-                
-                # Añadir el ID y timestamp al mensaje para el Frontend
+
                 data["message_id"] = new_message.message_id
                 data["created_at"] = str(new_message.datetime_created_at)
             finally:
                 db.close()
 
-            # enviar mensaje solo a los de esta conversación
+            # Enviar mensaje a todos en esta sala
             for connection in rooms[conversation_id]:
                 await connection.send_json(data)
 
     except WebSocketDisconnect:
-
         rooms[conversation_id].remove(websocket)
 
-        print("Usuario desconectado")
+        # Fix memory leak: limpiar la sala si queda vacía
+        if not rooms[conversation_id]:
+            del rooms[conversation_id]
+
+        print(f"Usuario {user_id} desconectado de sala {conversation_id}")

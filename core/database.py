@@ -35,3 +35,19 @@ SessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
+
+
+# ---------- DEPENDENCIA DB (centralizada) ----------
+def get_db():
+    """
+    Generador de sesión de base de datos para inyección de dependencias en FastAPI.
+    Garantiza que la sesión se cierre correctamente aunque ocurra un error.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
