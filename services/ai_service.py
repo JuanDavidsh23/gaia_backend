@@ -1,14 +1,17 @@
 import random
-import google.generativeai as genai
+from google import genai
 from core.config import GEMINI_API_KEY
 
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-pro")
+ai = genai.Client(api_key=GEMINI_API_KEY)
+MODEL_NAME = "gemini-3-flash-preview"
 
 # Función original para el endpoint /ai
 def ask_ai(message: str) -> str:
     try:
-        response = model.generate_content(message)
+        response = ai.models.generate_content(
+            model=MODEL_NAME,
+            contents=message
+        )
         return response.text.strip()
     except Exception as e:
         print(f"Error en Gemini: {e}")
@@ -41,6 +44,13 @@ Instrucciones:
 Si no hay groserías y no tienes nada útil que aportar, responde exactamente la palabra: SILENCIO
 Si sí respondes, escribe directamente el mensaje sin prefijos como 'Asistente:' ni 'IA:'."""
 
-    response = model.generate_content(prompt)
-    result = response.text.strip()
-    return None if result == "SILENCIO" else result
+    try:
+        response = ai.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt
+        )
+        result = response.text.strip()
+        return None if result == "SILENCIO" else result
+    except Exception as e:
+        print(f"Error en Gemini Moderación: {e}")
+        return None
