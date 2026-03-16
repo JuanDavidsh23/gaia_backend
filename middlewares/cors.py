@@ -11,7 +11,10 @@ from fastapi.middleware.cors import CORSMiddleware
 def add_cors_middleware(app: FastAPI):
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],  # In production, change to your domain
+        allow_origins=[
+            "http://localhost:5173",  # For local development
+            "https://learning-swap-front-end-seven.vercel.app"  # Your frontend domain
+        ], 
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
