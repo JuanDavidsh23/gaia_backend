@@ -33,6 +33,7 @@ def get_user_profile(db: Session, user_id: int):
         "bio": user.bio,
         "avatar_url": user.avatar_url,
         "phone": user.phone,
+        "points": user.points,
         "skills_to_teach": [s[0] for s in teach_skills_query],
         "skills_to_learn": [s[0] for s in learn_skills_query]
     }

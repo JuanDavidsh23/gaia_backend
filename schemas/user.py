@@ -25,6 +25,7 @@ class UserProfileResponse(BaseModel):
     phone: Optional[str] = None
     skills_to_learn: List[str] = []
     skills_to_teach: List[str] = []
+    points: int = 0
 
 # Schema for updating the user profile.
 class UserUpdateRequest(BaseModel):
